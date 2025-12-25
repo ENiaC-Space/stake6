@@ -1,28 +1,17 @@
-let web3, account;
+/*********************************************************
+ * ENIAC DEX – APP.JS (MAINNET READY)
+ * Fix: approve sai token, sai decimals, silent revert
+ *********************************************************/
 
-// ===== MAINNET ADDRESS (THEO FILE ABI ANH GỬI) =====
+let web3;
+let account;
+
+/* ================== CONFIG ================== */
+const CHAIN_ID = "0x38"; // BSC Mainnet (đổi nếu chain khác)
 const MASTERCHEF = "0x564DF71B75855d63c86a267206Cd0c9e35c92789";
-const CHAIN_ID = "0x38"; // BSC mainnet
 
-// ===== ABI ĐẦY ĐỦ – ĐÚNG FILE ANH GỬI =====
+/* ================== ABI ================== */
 const MASTER_ABI = [
-  {
-    "inputs":[
-      {"internalType":"contract IANT","name":"_ANT","type":"address"},
-      {"internalType":"contract IVault","name":"_vault","type":"address"},
-      {"internalType":"address","name":"_devaddr","type":"address"},
-      {"internalType":"uint256","name":"_ANTPerBlock","type":"uint256"},
-      {"internalType":"uint256","name":"_startBlock","type":"uint256"}
-    ],
-    "type":"constructor"
-  },
-  {
-    "inputs":[{"internalType":"uint256","name":"_pid","type":"uint256"}],
-    "name":"updatePool",
-    "outputs":[],
-    "stateMutability":"nonpayable",
-    "type":"function"
-  },
   {
     "inputs":[{"internalType":"uint256","name":"_pid","type":"uint256"}],
     "name":"poolInfo",
@@ -36,10 +25,7 @@ const MASTER_ABI = [
     "type":"function"
   },
   {
-    "inputs":[
-      {"internalType":"uint256","name":"_pid","type":"uint256"},
-      {"internalType":"address","name":"_user","type":"address"}
-    ],
+    "inputs":[{"internalType":"uint256","name":"_pid","type":"uint256"},{"internalType":"address","name":"_user","type":"address"}],
     "name":"userInfo",
     "outputs":[
       {"internalType":"uint256","name":"amount","type":"uint256"},
@@ -49,30 +35,19 @@ const MASTER_ABI = [
     "type":"function"
   },
   {
-    "inputs":[
-      {"internalType":"uint256","name":"_pid","type":"uint256"},
-      {"internalType":"uint256","name":"_amount","type":"uint256"}
-    ],
+    "inputs":[{"internalType":"uint256","name":"_pid","type":"uint256"},{"internalType":"uint256","name":"_amount","type":"uint256"}],
     "name":"deposit",
-    "outputs":[],
     "stateMutability":"nonpayable",
     "type":"function"
   },
   {
-    "inputs":[
-      {"internalType":"uint256","name":"_pid","type":"uint256"},
-      {"internalType":"uint256","name":"_amount","type":"uint256"}
-    ],
+    "inputs":[{"internalType":"uint256","name":"_pid","type":"uint256"},{"internalType":"uint256","name":"_amount","type":"uint256"}],
     "name":"withdraw",
-    "outputs":[],
     "stateMutability":"nonpayable",
     "type":"function"
   },
   {
-    "inputs":[
-      {"internalType":"uint256","name":"_pid","type":"uint256"},
-      {"internalType":"address","name":"_user","type":"address"}
-    ],
+    "inputs":[{"internalType":"uint256","name":"_pid","type":"uint256"},{"internalType":"address","name":"_user","type":"address"}],
     "name":"pendingANT",
     "outputs":[{"internalType":"uint256","name":"","type":"uint256"}],
     "stateMutability":"view",
@@ -87,14 +62,10 @@ const MASTER_ABI = [
   }
 ];
 
-// ===== ERC20 ABI ĐẦY ĐỦ =====
 const ERC20_ABI = [
   {
     "constant":false,
-    "inputs":[
-      {"name":"spender","type":"address"},
-      {"name":"amount","type":"uint256"}
-    ],
+    "inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],
     "name":"approve",
     "outputs":[{"name":"","type":"bool"}],
     "type":"function"
@@ -108,6 +79,13 @@ const ERC20_ABI = [
   },
   {
     "constant":true,
+    "inputs":[],
+    "name":"decimals",
+    "outputs":[{"name":"","type":"uint8"}],
+    "type":"function"
+  },
+  {
+    "constant":true,
     "inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],
     "name":"allowance",
     "outputs":[{"name":"","type":"uint256"}],
@@ -115,21 +93,21 @@ const ERC20_ABI = [
   }
 ];
 
-// ===== INIT =====
-document.getElementById("connectBtn").onclick = connect;
+/* ================== INIT ================== */
+document.getElementById("connectBtn").onclick = connectWallet;
 
-function master(){
+function master() {
   return new web3.eth.Contract(MASTER_ABI, MASTERCHEF);
 }
 
-// ===== CONNECT WALLET =====
-async function connect(){
-  if(!window.ethereum){
-    alert("Cài MetaMask trước");
+/* ================== CONNECT WALLET ================== */
+async function connectWallet() {
+  if (!window.ethereum) {
+    alert("Vui lòng cài MetaMask");
     return;
   }
 
-  if (ethereum.chainId !== CHAIN_ID){
+  if (ethereum.chainId !== CHAIN_ID) {
     await ethereum.request({
       method: "wallet_switchEthereumChain",
       params: [{ chainId: CHAIN_ID }]
@@ -137,59 +115,106 @@ async function connect(){
   }
 
   web3 = new Web3(window.ethereum);
-  const accs = await ethereum.request({ method: "eth_requestAccounts" });
-  account = accs[0];
+  const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+  account = accounts[0];
 
   document.getElementById("wallet").innerText =
-    account.slice(0,6) + "..." + account.slice(-4);
+    account.slice(0, 6) + "..." + account.slice(-4);
 
   loadPools();
 }
 
-// ===== LOAD POOLS (QUAN TRỌNG) =====
-async function loadPools(){
-  const len = await master().methods.poolLength().call();
-  const div = document.getElementById("farms");
-  div.innerHTML = "";
+/* ================== CORE LOGIC ================== */
+async function getPoolToken(pid) {
+  const pool = await master().methods.poolInfo(pid).call();
+  const token = new web3.eth.Contract(ERC20_ABI, pool.lpToken);
+  const decimals = await token.methods.decimals().call();
+  return { token, decimals, address: pool.lpToken };
+}
 
-  for(let pid=0; pid<len; pid++){
-    const pool = await master().methods.poolInfo(pid).call();
-    div.innerHTML += `
+/* ================== LOAD FARMS ================== */
+async function loadPools() {
+  const length = await master().methods.poolLength().call();
+  const farms = document.getElementById("farms");
+  farms.innerHTML = "";
+
+  for (let pid = 0; pid < length; pid++) {
+    const user = await master().methods.userInfo(pid, account).call();
+    const pending = await master().methods.pendingANT(pid, account).call();
+
+    farms.innerHTML += `
       <div class="farm">
         <b>Pool #${pid}</b><br>
-        <small>Stake token: ${pool.lpToken}</small><br>
+        Staked: ${format(user.amount)}<br>
+        Pending: ${format(pending)}<br>
         <input id="amt${pid}" placeholder="Amount">
-        <button onclick="approveToken(${pid})">Approve</button>
+        <button onclick="approve(${pid})">Approve</button>
         <button onclick="stake(${pid})">Stake</button>
         <button onclick="withdraw(${pid})">Withdraw</button>
+        <button onclick="harvest(${pid})">Harvest</button>
       </div>
     `;
   }
 }
 
-// ===== APPROVE ĐÚNG TOKEN CỦA POOL =====
-async function approveToken(pid){
-  const pool = await master().methods.poolInfo(pid).call();
-  const token = new web3.eth.Contract(ERC20_ABI, pool.lpToken);
+/* ================== ACTIONS ================== */
+async function approve(pid) {
+  const { token, decimals } = await getPoolToken(pid);
+
+  const max = web3.utils.toBN(10)
+    .pow(web3.utils.toBN(decimals))
+    .mul(web3.utils.toBN("1000000000"));
 
   await token.methods
-    .approve(MASTERCHEF, web3.utils.toWei("1000000000"))
+    .approve(MASTERCHEF, max.toString())
     .send({ from: account });
 }
 
-// ===== STAKE / WITHDRAW =====
-async function stake(pid){
-  const val = document.getElementById("amt"+pid).value;
-  if(!val || val <= 0) return;
+async function stake(pid) {
+  const input = document.getElementById("amt" + pid).value;
+  if (!input || Number(input) <= 0) {
+    alert("Amount không hợp lệ");
+    return;
+  }
+
+  const { decimals } = await getPoolToken(pid);
+  const amount = web3.utils.toBN(input)
+    .mul(web3.utils.toBN(10).pow(web3.utils.toBN(decimals)));
 
   await master().methods
-    .deposit(pid, web3.utils.toWei(val))
+    .deposit(pid, amount.toString())
     .send({ from: account });
+
+  loadPools();
 }
 
-async function withdraw(pid){
-  const val = document.getElementById("amt"+pid).value;
+async function withdraw(pid) {
+  const input = document.getElementById("amt" + pid).value;
+  if (!input || Number(input) <= 0) {
+    alert("Amount không hợp lệ");
+    return;
+  }
+
+  const { decimals } = await getPoolToken(pid);
+  const amount = web3.utils.toBN(input)
+    .mul(web3.utils.toBN(10).pow(web3.utils.toBN(decimals)));
+
   await master().methods
-    .withdraw(pid, web3.utils.toWei(val))
+    .withdraw(pid, amount.toString())
     .send({ from: account });
+
+  loadPools();
+}
+
+async function harvest(pid) {
+  await master().methods
+    .deposit(pid, 0)
+    .send({ from: account });
+
+  loadPools();
+}
+
+/* ================== UTIL ================== */
+function format(val) {
+  return web3.utils.fromWei(val.toString(), "ether");
 }
