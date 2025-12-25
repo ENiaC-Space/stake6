@@ -1,0 +1,55 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: radial-gradient(circle at top, #1a1a40, #050517);
+  color: #fff;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px;
+  background: #0b0b2d;
+}
+
+.logo {
+  font-size: 22px;
+  font-weight: bold;
+}
+
+button {
+  background: linear-gradient(135deg, #00eaff, #6f00ff);
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  margin: 5px;
+}
+
+nav {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.card {
+  width: 380px;
+  margin: 40px auto;
+  padding: 25px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 16px;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 8px;
+  border: none;
+}
+
+.farm {
+  border-top: 1px solid rgba(255,255,255,0.1);
+  padding-top: 15px;
+  margin-top: 15px;
+}
