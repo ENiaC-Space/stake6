@@ -1,46 +1,22 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-<meta charset="UTF-8">
-<title>ENiaC DEX</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
-<link rel="stylesheet" href="style.css">
-</head>
+  <meta charset="UTF-8">
+  <title>ENiaC Stake</title>
 
+  <!-- WEB3 BẮT BUỘC -->
+  <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+
+  <link rel="stylesheet" href="style.css">
+</head>
 <body>
 
-<header>
-  <div class="logo">ENiaC DEX</div>
   <button id="connectBtn">Connect Wallet</button>
-</header>
+  <span id="wallet">Not connected</span>
 
-<nav>
-  <button onclick="showTab('stake')">Stake</button>
-  <button onclick="showTab('farm')">Farm</button>
-</nav>
-
-<!-- STAKE -->
-<section id="stake" class="card">
-  <h2>Stake ENIAC</h2>
-  <p>Wallet: <span id="wallet">-</span></p>
-  <p>Staked: <span id="staked">0</span> ENIAC</p>
-  <p>Pending: <span id="pending">0</span> ANT</p>
-  <p>APR: <span id="apr">-</span></p>
-
-  <input id="amount" placeholder="Amount">
-  <button onclick="approve()">Approve</button>
-  <button onclick="stake()">Stake</button>
-  <button onclick="withdraw()">Withdraw</button>
-  <button onclick="harvest()">Harvest</button>
-</section>
-
-<!-- FARM -->
-<section id="farm" class="card" style="display:none">
-  <h2>Farms</h2>
   <div id="farms"></div>
-</section>
 
-<script src="app.js"></script>
+  <!-- APP JS PHẢI ĐẶT CUỐI -->
+  <script src="app.js"></script>
 </body>
 </html>
